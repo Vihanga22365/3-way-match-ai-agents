@@ -5,3 +5,4 @@ langchain==0.3.21
 langchain-google-genai==2.0.10
 pypdf==5.4.0
 python-dotenv==1.1.0
+markdown==3.7

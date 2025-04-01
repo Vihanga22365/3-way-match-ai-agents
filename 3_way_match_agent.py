@@ -4,6 +4,7 @@ import pypdf
 from io import BytesIO
 import os
 from dotenv import load_dotenv # Use dotenv for local development
+import markdown
 
 # --- Langchain Imports ---
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -373,7 +374,10 @@ with chat_container:
         # Ensure role is valid before displaying
         if message.get("role") in ["user", "assistant"]:
             with st.chat_message(message["role"]):
-                st.markdown(message["content"])
+                # st.markdown(message["content"])
+                message_content_with_newlines = message["content"].replace('\n', '<br>')
+                message_html_content = markdown.markdown(message_content_with_newlines)
+                st.markdown(f"""<div style="font-size: 17px">{message_html_content}</div>""", unsafe_allow_html=True)
 
 # --- Handle User Input ---
 if prompt := st.chat_input("Your response or instructions..."):
@@ -385,7 +389,10 @@ if prompt := st.chat_input("Your response or instructions..."):
     # Display user message
     with chat_container: # Display within the same container
          with st.chat_message("user"):
-            st.markdown(prompt)
+            # st.markdown(prompt)
+            message_content_with_newlines = prompt.replace('\n', '<br>')
+            message_html_content = markdown.markdown(message_content_with_newlines)
+            st.markdown(f"""<div style="font-size: 17px">{message_html_content}</div>""", unsafe_allow_html=True)
 
     # Agent response logic based on stage
     if st.session_state.processing_stage == "awaiting_user_decision":
