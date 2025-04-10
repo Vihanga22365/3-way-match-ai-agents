@@ -282,38 +282,33 @@ if uploaded_core_docs and not st.session_state.initial_analysis_done:
                  st.warning("Could not process all core documents.")
 
             # Prepare the initial analysis prompt
-            initial_prompt_content = f"""
-            Analyze the following documents for a 3-way match. The documents provided are:
-            {list(st.session_state.uploaded_docs_text.keys())}
+            initial_prompt_content = f"""            
+                    Analyze the following documents for a 3-way match. The documents provided are:            
+                            {list(st.session_state.uploaded_docs_text.keys())}            
+                        Document Content:            
+                            [Content Start]            
+                                {combined_core_text}            
+                            [Content End]            
+                    ##Objective##            
+                        You are an agent with the objective of carrying out a 3 wayyb match comparing a purchase order, invoice and a goods receipt in the manufacturing domain.             
+                        You will analyze the documents and try to reconcile the 3 way match and will find evidence to do so based on the evidence documents provided.             
+                    ##Instructions##            
+                        1. Identify which document is the Purchase Order (PO), which is the Invoice, and which is the Goods Receipt (GR). If any are missing or unclear, state that and ask the user.            
+                        2. Compare the PO, Invoice, and GR line item by line item. Focus on:               
+                        - Item descriptions/codes               
+                        - Quantities (Compare PO vs GR, Invoice vs GR)               
+                        - Prices/Total amounts (Compare PO vs Invoice)            
+                        3. If all relevant line items match perfectly across the documents (considering quantities and prices as described above), state clearly: "3-way match successful" to the user.             
+                        4. If there are any discrepancies, only list the discrepancies. List each discrepancy clearly. For each discrepancy, specify:
+                        - The line item involved (description or number).               
+                        - The nature of the discrepancy (e.g., 'Quantity Mismatch', 'Price Mismatch').               
+                        - The values found in each relevant document (e.g., 'PO Qty: 10, GR Qty: 8', 'Invoice Price: $100, PO Price: $95').               
+                        - The documents involved in the specific mismatch (e.g., 'between Invoice and PO').            
+                        5. After listing all discrepancies, explicitly ask the user: "Discrepancies found. Do you want me to analyze the provided email trails/correspondence documents for reconciliation evidence?" Do not proceed further until the user responds.              
+                        6. Do not include the raw text from the 'Document Content' section above in your response to the user. Only present your findings and the question if discrepancies exist.            
+                        7. At any given point, user may ask additional questions regarding the documents and the process. Provide answers to the user as appropriate but do not go out of context. 
+                    """
 
-            Document Content:
-            [Content Start]
-            {combined_core_text}
-            [Content End]
-
-            ##Objective##
-            You are an agent with the objective of carrying out a 3 wayyb match comparing a purchase order, invoice and a goods receipt in the manufacturing domain. 
-            You will analyze the documents and try to reconcile the 3 way match and will find evidence to do so based on the evidence documents provided. 
-
-            ##Instructions##
-            1. Identify which document is the Purchase Order (PO), which is the Invoice, and which is the Goods Receipt (GR). If any are missing or unclear, state that and ask the user.
-            2. Compare the PO, Invoice, and GR line item by line item. Focus on:
-               - Item descriptions/codes
-               - Quantities (Compare PO vs GR, Invoice vs GR)
-               - Prices/Total amounts (Compare PO vs Invoice)
-            3. If all relevant line items match perfectly across the documents (considering quantities and prices as described above), state clearly: "3-way match successful" to the user. 
-            4. If there are any discrepancies, only list the discrepencies. List each discrepancy clearly. For each discrepancy, specify:
-               - The line item involved (description or number).
-               - The nature of the discrepancy (e.g., 'Quantity Mismatch', 'Price Mismatch').
-               - The values found in each relevant document (e.g., 'PO Qty: 10, GR Qty: 8', 'Invoice Price: $100, PO Price: $95').
-               - The documents involved in the specific mismatch (e.g., 'between Invoice and PO').
-            5. After listing all discrepancies, explicitly ask the user: "Discrepancies found. Do you want me to analyze the provided email trails/communication documents for reconciliation evidence?" Do not proceed further until the user responds.
-            6. Bsaed on the email trail if you can find evidence to reconcile the PO, Invoice and GR, mention the findigns clearly with details to the user. 
-            7. If all the line items can now be reconciled, mention at the end that "How that I have found evidence to reconcile he Purchase Order, nvoice and Goods Receipr, workflow will proceed to create a new Purchase Order to reflect the agreement as per the correspondence"
-            6. If you cannot confidently identify the documents or perform the comparison, state the issue clearly.
-            7. Do not include the raw text from the 'Document Content' section above in your response to the user. Only present your findings and the question if discrepancies exist.
-            8. At any given point, user may ask additional questions regarding the documents and the process. Provide answers to the user as appropreate but do not go out of context. 
-            """
 
             # Add user prompt (representing the analysis request) to histories
             user_analysis_request_display = f"Analyze the {len(st.session_state.uploaded_docs_text)} uploaded core documents for 3-way match."
@@ -412,30 +407,33 @@ if prompt := st.chat_input("Your response or instructions..."):
                     combined_email_text += f"--- Email Document: {filename} ---\n{text}\n\n"
 
                 # Prepare the detailed email analysis prompt FOR THE API
-                email_analysis_prompt_content = f"""
-                Based on the user's last message ("{prompt}") and our previous conversation where I identified discrepancies and asked about analyzing emails:
+                email_analysis_prompt_content = f"""                
+                    Based on the user's last message ("{prompt}") and our previous conversation where I identified discrepancies and asked about analyzing emails:
+                        1. First, determine if the user agreed to proceed with analyzing the email trails. Respond ONLY with "Proceeding with email analysis." or "Not proceeding with email analysis based on user response." If proceeding, continue to step 2. If not, stop here.                
+                        2. If proceeding with email analysis, analyze the email communications provided below to see if they reconcile the discrepancies identified earlier.                
+                            Email Trail / Communication Document Content:                
+                                [Content Start]                
+                                    {combined_email_text}                
+                                [Content End]                
+                        Instructions for Analysis (only if proceeding):                
+                            a. Carefully read the email trail/communication content provided above.                
+                            b. Look for specific agreements, change confirmations, clarifications, or any communication between the parties that directly addresses the discrepancies identified earlier in our conversation.                
+                            c. For each discrepancy previously listed, state whether you found evidence in the emails to reconcile it.                   
+                                - If evidence is found: Explain the evidence and how it reconciles the specific discrepancy (e.g., "The email dated DD/MM/YYYY confirms agreement on the price change for item X, reconciling the invoice-PO price mismatch.").                   
+                                - If no evidence is found: State clearly that no evidence was found in the provided communications for that specific discrepancy.                
+                            d. Conclude with a final verdict:                   
+                                - If all discrepancies are reconciled: "Final Verdict: 3-way match successful after reconciliation using email evidence."                   
+                                - If some discrepancies remain unresolved: "Final Verdict: 3-way match partially reconciled. The following discrepancies remain unresolved due to lack of evidence in communications: [List unresolved discrepancies]."                   
+                                - If no discrepancies were reconciled: "Final Verdict: 3-way match unsuccessful. No evidence found in communications to reconcile the identified discrepancies."
+                            3. After the verdict, list down the following options to the user as the next steps. 
+                                1)Revise the PO
+                                2)Keep the transaction on hold
+                                3)Open a case with the vendor
+                                4)Raise a case with the warehouse. 
+                                Once the uses selects an option or gives an instruction, Just acknowledge that you’d proceed with the instructions given.                 
+                            4. **Important:** Do not include the raw text from the 'Email Trail / Communication Document Content' section above in your response to the user. Only present your findings and the final verdict.                
+                    """
 
-                1. First, determine if the user agreed to proceed with analyzing the email trails. Respond ONLY with "Proceeding with email analysis." or "Not proceeding with email analysis based on user response." If proceeding, continue to step 2. If not, stop here.
-
-                2. (If proceeding) Analyze the email communications provided below to see if they reconcile the discrepancies identified earlier.
-
-                Email Trail / Communication Document Content:
-                [Content Start]
-                {combined_email_text}
-                [Content End]
-
-                Instructions for Analysis (only if proceeding):
-                a. Carefully read the email trail/communication content provided above.
-                b. Look for specific agreements, change confirmations, clarifications, or any communication between the parties that directly addresses the discrepancies identified earlier in our conversation.
-                c. For each discrepancy previously listed, state whether you found evidence in the emails to reconcile it.
-                   - If evidence is found: Explain the evidence and how it reconciles the specific discrepancy (e.g., "The email dated DD/MM/YYYY confirms agreement on the price change for item X, reconciling the invoice-PO price mismatch.").
-                   - If no evidence is found: State clearly that no evidence was found in the provided communications for that specific discrepancy.
-                d. Conclude with a final verdict:
-                   - If all discrepancies are reconciled: "Final Verdict: 3-way match successful after reconciliation using email evidence."
-                   - If some discrepancies remain unresolved: "Final Verdict: 3-way match partially reconciled. The following discrepancies remain unresolved due to lack of evidence in communications: [List unresolved discrepancies]."
-                   - If no discrepancies were reconciled: "Final Verdict: 3-way match unsuccessful. No evidence found in communications to reconcile the identified discrepancies."
-                e. **Important:** Do not include the raw text from the 'Email Trail / Communication Document Content' section above in your response to the user. Only present your findings and the final verdict.
-                """
 
                 # Replace the last user message in API context with this detailed prompt
                 st.session_state.full_context_messages[-1] = {"role": "user", "content": email_analysis_prompt_content}
