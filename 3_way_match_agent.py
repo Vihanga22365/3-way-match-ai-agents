@@ -23,7 +23,7 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 os.environ["LANGSMITH_TRACING"]='true'
 os.environ["LANGSMITH_ENDPOINT"]="https://api.smith.langchain.com"
-os.environ["LANGSMITH_API_KEY"]="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"
+os.environ["LANGSMITH_API_KEY"]="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"
 os.environ["LANGSMITH_PROJECT"]="3 Way Match Agent"
 
 
