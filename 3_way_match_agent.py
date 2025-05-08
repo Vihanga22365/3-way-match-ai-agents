@@ -5,6 +5,7 @@ from io import BytesIO
 import os
 from dotenv import load_dotenv # Use dotenv for local development
 import markdown
+from langchain_openai import ChatOpenAI
 
 # --- Langchain Imports ---
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -20,6 +21,10 @@ load_dotenv()
 # Example using environment variables:
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+os.environ["LANGSMITH_TRACING"]='true'
+os.environ["LANGSMITH_ENDPOINT"]="https://api.smith.langchain.com"
+os.environ["LANGSMITH_API_KEY"]="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"
+os.environ["LANGSMITH_PROJECT"]="3 Way Match Agent"
 
 
 # Fallback for direct key insertion (NOT RECOMMENDED FOR PRODUCTION)
@@ -31,11 +36,11 @@ if not GOOGLE_API_KEY:
 
 # --- Model Configuration ---
 AVAILABLE_MODELS = {
-    "GPT-4o (OpenAI)": "gpt-4o",
+    "GPT-4.1 (OpenAI)": "gpt-4.1",
     "Gemini 2.5 Pro": "gemini-2.5-pro-exp-03-25",
     # Add other models here if needed, e.g., "Gemini Pro (Google/Langchain)": "gemini-pro"
 }
-DEFAULT_MODEL_KEY = "GPT-4o (OpenAI)"
+DEFAULT_MODEL_KEY = "GPT-4.1 (OpenAI)"
 
 # --- Helper Functions ---
 
@@ -118,20 +123,27 @@ def call_llm_agent(messages_for_api, selected_model_key):
             if not OPENAI_API_KEY or OPENAI_API_KEY.startswith("YOUR_"):
                 st.error("⚠️ OpenAI API key is missing or invalid. Please configure it.")
                 return None
-            client = OpenAI(api_key=OPENAI_API_KEY)
-            valid_messages = [
-                {"role": msg["role"], "content": msg["content"]}
-                for msg in messages_for_api if "role" in msg and "content" in msg
-            ]
-            if not valid_messages:
-                 st.error("Cannot call OpenAI API with empty message list.")
-                 return None
-            response = client.chat.completions.create(
+
+            # Convert messages to Langchain format
+            lc_messages = convert_messages_for_langchain(messages_for_api)
+            if not lc_messages:
+                st.error("Cannot call OpenAI API with empty message list.")
+                return None
+
+            # Use Langchain ChatOpenAI
+            llm = ChatOpenAI(
                 model=model_name,
-                messages=valid_messages,
-                temperature=0.2
+                openai_api_key=OPENAI_API_KEY,
+                temperature=0.2,
             )
-            return response.choices[0].message.content
+            response = llm.invoke(lc_messages)
+            if isinstance(response, BaseMessage):
+                return response.content
+            elif isinstance(response, str):
+                return response
+            else:
+                st.error(f"Unexpected response type from Langchain OpenAI: {type(response)}")
+                return None
 
         # --- Google Gemini Call (via Langchain) ---
         elif "Gemini" in selected_model_key:
