@@ -234,6 +234,160 @@ if "discrepancy_found" not in st.session_state:
 if "initial_analysis_done" not in st.session_state:
     st.session_state.initial_analysis_done = False
 
+# --- Sample Hardcoded Documents ---
+SAMPLE_CORE_DOCS = {
+    "sample_po.pdf": """Vehicle Manufacturing Company
+Purchase Order
+Date: March 30, 2025
+Spare Part Unit Price ($) Quantity Total Price ($)
+Brake Pads 50.00 10 500.00
+Oil Filter 15.00 20 300.00
+Air Filter 20.00 15 300.00
+Spark Plug 8.00 40 320.00
+Headlight Bulb 25.00 10 250.00
+Battery 120.00 5 600.00
+Alternator 200.00 3 600.00
+Radiator 180.00 2 360.00
+Clutch Kit 250.00 4 1000.00
+Timing Belt 60.00 6 360.00
+Grand Total $4590.00
+Authorized Signature: ___________________________
+Supplier Signature: _____________________________
+Disclaimer: This purchase order is valid only upon authorization by the Vehicle Manufacturing Company. All goods must
+be delivered in accordance with our quality standards. Payment will be made within 30 days of delivery.""",
+
+    "sample_invoice.pdf": """
+    © 2020 - National Water Supply & Drainage Board
+Online Payment Confirmation
+Reference No. Source Status Amount
+Total : 9378.96
+Print
+Date : 22/03/2025
+Receipt No : 508101184510
+Mobile No : 0765462043
+10/38/297/129/10 Web CAPTURED 9378.96
+
+""",
+
+    "sample_gr.pdf": """AutoSupplies Inc.
+GOODS RECEIPT
+Receipt Date: March 30, 2025
+Received By: Vehicle Manufacturing Company
+Received From: AutoSupplies Inc.
+Spare Part Unit Price ($) Quantity Total Price ($)
+Brake Pads 50.00 10 500.00
+Oil Filter 15.00 20 300.00
+Air Filter 20.00 15 300.00
+Spark Plug 8.00 40 320.00
+Headlight Bulb 25.00 10 250.00
+Battery 130.00 6 780.00
+Alternator 200.00 3 600.00
+Radiator 190.00 3 570.00
+Clutch Kit 250.00 4 1000.00
+Timing Belt 60.00 6 360.00
+Total Value of Goods $4980.00
+Receiver Signature: ___________________________
+Delivery Personnel Signature: ___________________________
+Disclaimer: This goods receipt acknowledges that all items listed above were received in good condition and match the
+specifications of the accompanying invoice. Any discrepancies must be reported within 3 business days."""
+}
+
+SAMPLE_EMAIL_DOCS = {
+    "sample_email.pdf": """Email Conversation - Supply Chain Correspondence
+Date: March 10, 2025 09:30
+From: supply.manager@vehicleco.com
+To: sales.manager@autosupplies.com
+Subject: Purchase Order Confirmation and Delivery Expectations
+Dear John,
+We have issued a purchase order for the listed spare parts. Please confirm the expected delivery dates and
+acknowledge the quality assurance for all line items.
+Best,
+Sarah
+Date: March 10, 2025 12:45
+From: sales.manager@autosupplies.com
+To: supply.manager@vehicleco.com
+Subject: Re: Purchase Order Confirmation and Delivery Expectations
+Hi Sarah,
+Thank you for the PO. We ensure that all parts comply with ISO 9001 standards and will provide
+documentation upon delivery. Tentative delivery date: March 25.
+Regards,
+John
+Date: March 11, 2025 10:15
+From: supply.manager@vehicleco.com
+To: sales.manager@autosupplies.com
+Subject: Request for Quality Certificates
+Email Conversation - Supply Chain Correspondence
+Hi John,
+Can you please include CoC and test certificates for Brake Pads, Radiator, and Battery in the delivery?
+Thanks,
+Sarah
+Date: March 11, 2025 14:00
+From: sales.manager@autosupplies.com
+To: supply.manager@vehicleco.com
+Subject: Re: Request for Quality Certificates
+Hi Sarah,
+Absolutely. Those certificates will be included for the requested items. All products are tested and approved
+before dispatch.
+Best,
+John
+Date: March 13, 2025 08:50
+From: supply.manager@vehicleco.com
+To: sales.manager@autosupplies.com
+Subject: Negotiation on Battery and Radiator Units and Cost
+John,
+We noticed your quote has 6 units of Battery at $130 each and 3 units of Radiator at $190 each, whereas the
+PO had different quantities and prices. Can we proceed with your proposal?
+Regards,
+Email Conversation - Supply Chain Correspondence
+Sarah
+Date: March 13, 2025 11:20
+From: sales.manager@autosupplies.com
+To: supply.manager@vehicleco.com
+Subject: Re: Negotiation on Battery and Radiator Units and Cost
+Sarah,
+Yes, we can proceed with the 6 Batteries at $130 and 3 Radiators at $190. We'll update the invoice
+accordingly.
+Thanks,
+John
+Date: March 16, 2025 09:15
+From: supply.manager@vehicleco.com
+To: sales.manager@autosupplies.com
+Subject: Final Delivery Confirmation
+John,
+Please confirm the delivery will be on March 25 as per our earlier conversation. This is critical for our
+production schedule.
+Regards,
+Sarah
+Date: March 16, 2025 12:05
+From: sales.manager@autosupplies.com
+To: supply.manager@vehicleco.com
+Email Conversation - Supply Chain Correspondence
+Subject: Re: Final Delivery Confirmation
+Hi Sarah,
+Confirmed. Delivery is scheduled for March 25. Our logistics team will coordinate with your warehouse in
+advance.
+Best,
+John
+Date: March 26, 2025 10:10
+From: supply.manager@vehicleco.com
+To: sales.manager@autosupplies.com
+Subject: Goods Received and Documentation Check
+John,
+We've received the shipment. Documentation and quality of items were verified. All is in order, including the
+updated line items.
+Thanks,
+Sarah
+Date: March 26, 2025 13:30
+From: sales.manager@autosupplies.com
+To: supply.manager@vehicleco.com
+Subject: Re: Goods Received and Documentation Check
+Hi Sarah,
+Glad to hear everything was in order. Looking forward to working together on the next cycle.
+Email Conversation - Supply Chain Correspondence
+Regards,
+John"""
+}
+
 # --- File Uploaders ---
 col1, col2 = st.columns(2)
 with col1:
@@ -251,7 +405,122 @@ with col2:
         key="email_docs_uploader"
     )
 
-# --- Process Button ---
+# --- Automatic Processing with Sample Documents ---
+if not st.session_state.initial_analysis_done:
+    # Create a container for the automatic processing button
+    auto_process_container = st.container()
+    with auto_process_container:
+        if st.button("Start Analysis with Sample Documents"):
+            # Reset states for a new run
+            st.session_state.processing_stage = "analyzing_docs"
+            st.session_state.messages = []
+            st.session_state.full_context_messages = []
+            st.session_state.uploaded_docs_text = {}
+            st.session_state.uploaded_emails_text = {}
+            st.session_state.discrepancy_found = False
+            st.session_state.initial_analysis_done = True
+
+            # Add initial system message
+            system_message = {"role": "system", "content": "You are an AI assistant specialized in supply chain 3-way matching. Analyze the provided documents meticulously. Identify PO, Invoice, and GR. Compare line items (description, quantity, price). Report matches or list discrepancies clearly. If discrepancies exist, ask the user if you should analyze emails for reconciliation evidence. Do not show the raw document text in your response to the user."}
+            st.session_state.full_context_messages.append(system_message)
+
+            # Process Core Documents
+            with st.spinner("Analyzing Purchase Order, Invoice, and Goods Receipt..."):
+                combined_core_text = ""
+                st.write("---")
+                st.write("### Processing Core Documents:")
+                files_processed_count = 0
+
+                # Use sample documents
+                for doc_name, text in SAMPLE_CORE_DOCS.items():
+                    st.write(f"- Reading '{doc_name}'...")
+                    st.session_state.uploaded_docs_text[doc_name] = text
+                    combined_core_text += f"--- Document: {doc_name} ---\n{text}\n\n"
+                    files_processed_count += 1
+
+                if files_processed_count == 0:
+                    st.error("Failed to process sample documents.")
+                    st.session_state.processing_stage = "error"
+                    st.session_state.initial_analysis_done = False
+                    st.stop()
+
+                # Process Email Documents
+                with st.spinner("Processing communication documents..."):
+                    st.write("---")
+                    st.write("### Processing Communication Documents:")
+                    email_files_processed_count = 0
+
+                    # Use sample email documents
+                    for doc_name, text in SAMPLE_EMAIL_DOCS.items():
+                        st.write(f"- Reading '{doc_name}'...")
+                        st.session_state.uploaded_emails_text[doc_name] = text
+                        email_files_processed_count += 1
+
+                    if email_files_processed_count > 0:
+                        st.info(f"Processed {email_files_processed_count} communication document(s). Ready for analysis if needed.")
+
+                # Prepare the initial analysis prompt
+                initial_prompt_content = f"""
+                Analyze the following documents for a 3-way match. The documents provided are:
+                {list(st.session_state.uploaded_docs_text.keys())}
+
+                Document Content:
+                [Content Start]
+                {combined_core_text}
+                [Content End]
+
+                ##Objective##
+                You are an agent with the objective of carrying out a 3 way match comparing a purchase order, invoice and a goods receipt in the manufacturing domain. 
+                You will analyze the documents and try to reconcile the 3 way match and will find evidence to do so based on the evidence documents provided. 
+
+                ##Instructions##
+                1. Identify which document is the Purchase Order (PO), which is the Invoice, and which is the Goods Receipt (GR). If any are missing or unclear, state that and ask the user.
+                2. Compare the PO, Invoice, and GR line item by line item. Focus on:
+                   - Item descriptions/codes
+                   - Quantities (Compare PO vs GR, Invoice vs GR)
+                   - Prices/Total amounts (Compare PO vs Invoice)
+                3. If all relevant line items match perfectly across the documents (considering quantities and prices as described above), state clearly: "3-way match successful" to the user. 
+                4. If there are any discrepancies, only list the discrepancies. List each discrepancy clearly. For each discrepancy, specify:
+                   - The line item involved (description or number).
+                   - The nature of the discrepancy (e.g., 'Quantity Mismatch', 'Price Mismatch').
+                   - The values found in each relevant document (e.g., 'PO Qty: 10, GR Qty: 8', 'Invoice Price: $100, PO Price: $95').
+                   - The documents involved in the specific mismatch (e.g., 'between Invoice and PO').
+                5. After listing all discrepancies, explicitly ask the user: "Discrepancies found. Do you want me to analyze the provided email trails/correspondence documents for reconciliation evidence?" Do not proceed further until the user responds.  
+                6. Do not include the raw text from the 'Document Content' section above in your response to the user. Only present your findings and the question if discrepancies exist.
+                7. At any given point, user may ask additional questions regarding the documents and the process. Provide answers to the user as appropriate but do not go out of context. 
+                8. All your output has to be in concise and in point form. 
+                """
+
+                # Add user prompt to histories
+                user_analysis_request_display = f"Analyze the {len(st.session_state.uploaded_docs_text)} uploaded core documents for 3-way match."
+                st.session_state.messages.append({"role": "user", "content": user_analysis_request_display})
+                st.session_state.full_context_messages.append({"role": "user", "content": initial_prompt_content})
+
+                # Call the selected LLM agent
+                assistant_response = call_llm_agent(st.session_state.full_context_messages, st.session_state.selected_model_key)
+
+                if assistant_response:
+                    assistant_message = {"role": "assistant", "content": assistant_response}
+                    st.session_state.messages.append(assistant_message)
+                    st.session_state.full_context_messages.append(assistant_message)
+
+                    response_lower = assistant_response.lower()
+                    if "discrepancies found" in response_lower and ("analyze the provided email" in response_lower or "analyze the communication" in response_lower):
+                        st.session_state.discrepancy_found = True
+                        st.session_state.processing_stage = "awaiting_user_decision"
+                    elif "3-way match successful" in response_lower:
+                        st.session_state.processing_stage = "done_success"
+                    else:
+                        st.session_state.processing_stage = "agent_clarification"
+                else:
+                    st.error(f"The {st.session_state.selected_model_key} agent did not return a response for the initial analysis.")
+                    error_message = {"role": "assistant", "content": "Sorry, I encountered an error during the initial analysis."}
+                    st.session_state.messages.append(error_message)
+                    st.session_state.processing_stage = "error"
+
+                st.rerun()
+
+# --- Process Button for Uploaded Files ---
 if uploaded_core_docs and not st.session_state.initial_analysis_done:
     if st.button(f"Process 3 Way Match using {st.session_state.selected_model_key}"):
         # Reset states for a new run
@@ -264,11 +533,7 @@ if uploaded_core_docs and not st.session_state.initial_analysis_done:
         st.session_state.initial_analysis_done = True # Mark as started
 
         # Add initial system message
-        # Note: Gemini (via Langchain) might handle system prompts differently.
-        # Setting convert_system_message_to_human=True in ChatGoogleGenerativeAI helps.
         system_message = {"role": "system", "content": "You are an AI assistant specialized in supply chain 3-way matching. Analyze the provided documents meticulously. Identify PO, Invoice, and GR. Compare line items (description, quantity, price). Report matches or list discrepancies clearly. If discrepancies exist, ask the user if you should analyze emails for reconciliation evidence. Do not show the raw document text in your response to the user."}
-        # Don't add system message to display history if using Gemini with conversion? Or keep it for clarity? Let's keep it for now.
-        # st.session_state.messages.append(system_message) # Optional: Display system message?
         st.session_state.full_context_messages.append(system_message)
 
         # Process Core Documents
@@ -277,9 +542,17 @@ if uploaded_core_docs and not st.session_state.initial_analysis_done:
             st.write("---")
             st.write("### Processing Core Documents:")
             files_processed_count = 0
-            for doc in uploaded_core_docs:
+
+            # Use uploaded files if available, otherwise use sample documents
+            docs_to_process = uploaded_core_docs if uploaded_core_docs else [type('obj', (object,), {'name': k, 'getvalue': lambda: v.encode()}) for k, v in SAMPLE_CORE_DOCS.items()]
+            
+            for doc in docs_to_process:
                 st.write(f"- Reading '{doc.name}'...")
-                text = extract_text_from_pdf(doc)
+                if uploaded_core_docs:  # If using uploaded files
+                    text = extract_text_from_pdf(doc)
+                else:  # If using sample documents
+                    text = SAMPLE_CORE_DOCS[doc.name]
+                
                 if text:
                     st.session_state.uploaded_docs_text[doc.name] = text
                     combined_core_text += f"--- Document: {doc.name} ---\n{text}\n\n"
@@ -290,8 +563,36 @@ if uploaded_core_docs and not st.session_state.initial_analysis_done:
                 st.session_state.processing_stage = "error"
                 st.session_state.initial_analysis_done = False # Allow reprocessing
                 st.stop()
-            elif files_processed_count < len(uploaded_core_docs):
+            elif files_processed_count < len(docs_to_process):
                  st.warning("Could not process all core documents.")
+
+            # Process Email Documents
+            if uploaded_email_docs:
+                with st.spinner("Processing communication documents..."):
+                    st.write("---")
+                    st.write("### Processing Communication Documents:")
+                    email_files_processed_count = 0
+                    
+                    # Use uploaded files if available, otherwise use sample documents
+                    email_docs_to_process = uploaded_email_docs if uploaded_email_docs else [type('obj', (object,), {'name': k, 'getvalue': lambda: v.encode()}) for k, v in SAMPLE_EMAIL_DOCS.items()]
+                    
+                    for doc in email_docs_to_process:
+                        st.write(f"- Reading '{doc.name}'...")
+                        if uploaded_email_docs:  # If using uploaded files
+                            text = extract_text_from_pdf(doc)
+                        else:  # If using sample documents
+                            text = SAMPLE_EMAIL_DOCS[doc.name]
+                        
+                        if text:
+                            st.session_state.uploaded_emails_text[doc.name] = text
+                            email_files_processed_count += 1
+
+                    if email_files_processed_count == 0 and len(email_docs_to_process) > 0:
+                         st.warning("Could not extract text from any communication documents.")
+                    elif email_files_processed_count < len(email_docs_to_process):
+                         st.warning("Could not process all communication documents.")
+                    elif email_files_processed_count > 0:
+                         st.info(f"Processed {email_files_processed_count} communication document(s). Ready for analysis if needed.")
 
             # Prepare the initial analysis prompt
             initial_prompt_content = f"""
