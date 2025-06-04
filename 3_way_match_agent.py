@@ -134,7 +134,7 @@ def call_llm_agent(messages_for_api, selected_model_key):
             llm = ChatOpenAI(
                 model=model_name,
                 openai_api_key=OPENAI_API_KEY,
-                temperature=0.2,
+                temperature=0.0,
             )
             response = llm.invoke(lc_messages)
             if isinstance(response, BaseMessage):
@@ -152,7 +152,7 @@ def call_llm_agent(messages_for_api, selected_model_key):
                 return None
 
             # Initialize Langchain Chat Model
-            llm = ChatGoogleGenerativeAI(model=model_name, google_api_key=GOOGLE_API_KEY, temperature=0.2, convert_system_message_to_human=True) # convert_system needed for some Gemini versions
+            llm = ChatGoogleGenerativeAI(model=model_name, google_api_key=GOOGLE_API_KEY, temperature=0.0, convert_system_message_to_human=True) # convert_system needed for some Gemini versions
 
             # Convert messages to Langchain format
             lc_messages = convert_messages_for_langchain(messages_for_api)
@@ -234,156 +234,183 @@ if "discrepancy_found" not in st.session_state:
 if "initial_analysis_done" not in st.session_state:
     st.session_state.initial_analysis_done = False
 
-# --- Sample Hardcoded Documents ---
 SAMPLE_CORE_DOCS = {
-    "doc_po.pdf": """Vehicle Manufacturing Company
+    "Purchase_Order_Vehicle_Spare_Parts.pdf": """Vehicle Manufacturing Company
 Purchase Order
 Date: March 30, 2025
-Spare Part Unit Price ($) Quantity Total Price ($)
-Brake Pads 50.00 10 500.00
-Oil Filter 15.00 20 300.00
-Air Filter 20.00 15 300.00
-Spark Plug 8.00 40 320.00
-Headlight Bulb 25.00 10 250.00
-Battery 120.00 5 600.00
-Alternator 200.00 3 600.00
-Radiator 180.00 2 360.00
-Clutch Kit 250.00 4 1000.00
-Timing Belt 60.00 6 360.00
-Grand Total $4590.00
+
+| Spare Part    | Unit Price ($) | Quantity | Total Price ($) |
+|---------------|----------------|----------|-----------------|
+| Brake Pads    | 50.00         | 10       | 500.00         |
+| Oil Filter    | 15.00         | 20       | 300.00         |
+| Air Filter    | 20.00         | 15       | 300.00         |
+| Spark Plug    | 8.00          | 40       | 320.00         |
+| Headlight Bulb| 25.00         | 10       | 250.00         |
+| Battery       | 120.00        | 5        | 600.00         |
+| Alternator    | 200.00        | 3        | 600.00         |
+| Radiator      | 180.00        | 2        | 360.00         |
+| Clutch Kit    | 250.00        | 4        | 1000.00        |
+| Timing Belt   | 60.00         | 6        | 360.00         |
+
+Grand Total: $4590.00
+
 Authorized Signature: ___________________________
 Supplier Signature: _____________________________
+
 Disclaimer: This purchase order is valid only upon authorization by the Vehicle Manufacturing Company. All goods must
 be delivered in accordance with our quality standards. Payment will be made within 30 days of delivery.""",
 
-    "doc_invoice.pdf": """
-    © 2020 - National Water Supply & Drainage Board
+    "Payment Receipt.pdf": """© 2020 - National Water Supply & Drainage Board
 Online Payment Confirmation
-Reference No. Source Status Amount
-Total : 9378.96
-Print
-Date : 22/03/2025
-Receipt No : 508101184510
-Mobile No : 0765462043
-10/38/297/129/10 Web CAPTURED 9378.96
-
-""",
 
-    "doc_gr.pdf": """AutoSupplies Inc.
+| Reference No. | Source | Status    | Amount  |
+|---------------|--------|-----------|---------|
+| 10/38/297/129/10 | Web   | CAPTURED  | 9378.96 |
+
+Total: 9378.96
+
+Print
+Date: 22/03/2025
+Receipt No: 508101184510
+Mobile No: 0765462043""",
+
+    "Goods_Receipt_AutoSupplies_Inc.pdf": """AutoSupplies Inc.
 GOODS RECEIPT
 Receipt Date: March 30, 2025
 Received By: Vehicle Manufacturing Company
 Received From: AutoSupplies Inc.
-Spare Part Unit Price ($) Quantity Total Price ($)
-Brake Pads 50.00 10 500.00
-Oil Filter 15.00 20 300.00
-Air Filter 20.00 15 300.00
-Spark Plug 8.00 40 320.00
-Headlight Bulb 25.00 10 250.00
-Battery 130.00 6 780.00
-Alternator 200.00 3 600.00
-Radiator 190.00 3 570.00
-Clutch Kit 250.00 4 1000.00
-Timing Belt 60.00 6 360.00
-Total Value of Goods $4980.00
+
+| Spare Part    | Unit Price ($) | Quantity | Total Price ($) |
+|---------------|----------------|----------|-----------------|
+| Brake Pads    | 50.00         | 10       | 500.00         |
+| Oil Filter    | 15.00         | 20       | 300.00         |
+| Air Filter    | 20.00         | 15       | 300.00         |
+| Spark Plug    | 8.00          | 40       | 320.00         |
+| Headlight Bulb| 25.00         | 10       | 250.00         |
+| Battery       | 130.00        | 6        | 780.00         |
+| Alternator    | 200.00        | 3        | 600.00         |
+| Radiator      | 190.00        | 3        | 570.00         |
+| Clutch Kit    | 250.00        | 4        | 1000.00        |
+| Timing Belt   | 60.00         | 6        | 360.00         |
+
+Total Value of Goods: $4980.00
+
 Receiver Signature: ___________________________
 Delivery Personnel Signature: ___________________________
+
 Disclaimer: This goods receipt acknowledges that all items listed above were received in good condition and match the
 specifications of the accompanying invoice. Any discrepancies must be reported within 3 business days."""
 }
 
 SAMPLE_EMAIL_DOCS = {
-    "doc_email.pdf": """Email Conversation - Supply Chain Correspondence
+    "Email_Trail_Supply_Chain_Correspondence.pdf": """
+Email Conversation - Supply Chain Correspondence
+
 Date: March 10, 2025 09:30
 From: supply.manager@vehicleco.com
 To: sales.manager@autosupplies.com
 Subject: Purchase Order Confirmation and Delivery Expectations
+
 Dear John,
 We have issued a purchase order for the listed spare parts. Please confirm the expected delivery dates and
 acknowledge the quality assurance for all line items.
 Best,
 Sarah
+
 Date: March 10, 2025 12:45
 From: sales.manager@autosupplies.com
 To: supply.manager@vehicleco.com
 Subject: Re: Purchase Order Confirmation and Delivery Expectations
+
 Hi Sarah,
 Thank you for the PO. We ensure that all parts comply with ISO 9001 standards and will provide
 documentation upon delivery. Tentative delivery date: March 25.
 Regards,
 John
+
 Date: March 11, 2025 10:15
 From: supply.manager@vehicleco.com
 To: sales.manager@autosupplies.com
 Subject: Request for Quality Certificates
-Email Conversation - Supply Chain Correspondence
+
 Hi John,
 Can you please include CoC and test certificates for Brake Pads, Radiator, and Battery in the delivery?
 Thanks,
 Sarah
+
 Date: March 11, 2025 14:00
 From: sales.manager@autosupplies.com
 To: supply.manager@vehicleco.com
 Subject: Re: Request for Quality Certificates
+
 Hi Sarah,
 Absolutely. Those certificates will be included for the requested items. All products are tested and approved
 before dispatch.
 Best,
 John
+
 Date: March 13, 2025 08:50
 From: supply.manager@vehicleco.com
 To: sales.manager@autosupplies.com
 Subject: Negotiation on Battery and Radiator Units and Cost
+
 John,
 We noticed your quote has 6 units of Battery at $130 each and 3 units of Radiator at $190 each, whereas the
 PO had different quantities and prices. Can we proceed with your proposal?
 Regards,
-Email Conversation - Supply Chain Correspondence
 Sarah
+
 Date: March 13, 2025 11:20
 From: sales.manager@autosupplies.com
 To: supply.manager@vehicleco.com
 Subject: Re: Negotiation on Battery and Radiator Units and Cost
+
 Sarah,
 Yes, we can proceed with the 6 Batteries at $130 and 3 Radiators at $190. We'll update the invoice
 accordingly.
 Thanks,
 John
+
 Date: March 16, 2025 09:15
 From: supply.manager@vehicleco.com
 To: sales.manager@autosupplies.com
 Subject: Final Delivery Confirmation
+
 John,
 Please confirm the delivery will be on March 25 as per our earlier conversation. This is critical for our
 production schedule.
 Regards,
 Sarah
+
 Date: March 16, 2025 12:05
 From: sales.manager@autosupplies.com
 To: supply.manager@vehicleco.com
-Email Conversation - Supply Chain Correspondence
 Subject: Re: Final Delivery Confirmation
+
 Hi Sarah,
 Confirmed. Delivery is scheduled for March 25. Our logistics team will coordinate with your warehouse in
 advance.
 Best,
 John
+
 Date: March 26, 2025 10:10
 From: supply.manager@vehicleco.com
 To: sales.manager@autosupplies.com
 Subject: Goods Received and Documentation Check
+
 John,
 We've received the shipment. Documentation and quality of items were verified. All is in order, including the
 updated line items.
 Thanks,
 Sarah
+
 Date: March 26, 2025 13:30
 From: sales.manager@autosupplies.com
 To: supply.manager@vehicleco.com
 Subject: Re: Goods Received and Documentation Check
+
 Hi Sarah,
 Glad to hear everything was in order. Looking forward to working together on the next cycle.
-Email Conversation - Supply Chain Correspondence
 Regards,
 John"""
 }
