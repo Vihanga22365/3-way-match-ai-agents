@@ -236,7 +236,7 @@ if "initial_analysis_done" not in st.session_state:
 
 # --- Sample Hardcoded Documents ---
 SAMPLE_CORE_DOCS = {
-    "sample_po.pdf": """Vehicle Manufacturing Company
+    "doc_po.pdf": """Vehicle Manufacturing Company
 Purchase Order
 Date: March 30, 2025
 Spare Part Unit Price ($) Quantity Total Price ($)
@@ -256,7 +256,7 @@ Supplier Signature: _____________________________
 Disclaimer: This purchase order is valid only upon authorization by the Vehicle Manufacturing Company. All goods must
 be delivered in accordance with our quality standards. Payment will be made within 30 days of delivery.""",
 
-    "sample_invoice.pdf": """
+    "doc_invoice.pdf": """
     © 2020 - National Water Supply & Drainage Board
 Online Payment Confirmation
 Reference No. Source Status Amount
@@ -269,7 +269,7 @@ Mobile No : 0765462043
 
 """,
 
-    "sample_gr.pdf": """AutoSupplies Inc.
+    "doc_gr.pdf": """AutoSupplies Inc.
 GOODS RECEIPT
 Receipt Date: March 30, 2025
 Received By: Vehicle Manufacturing Company
@@ -293,7 +293,7 @@ specifications of the accompanying invoice. Any discrepancies must be reported w
 }
 
 SAMPLE_EMAIL_DOCS = {
-    "sample_email.pdf": """Email Conversation - Supply Chain Correspondence
+    "doc_email.pdf": """Email Conversation - Supply Chain Correspondence
 Date: March 10, 2025 09:30
 From: supply.manager@vehicleco.com
 To: sales.manager@autosupplies.com
